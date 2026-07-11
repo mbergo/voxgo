@@ -22,6 +22,12 @@ func runChat(voice string) {
 	if apiKey == "" {
 		log.Fatal("OPENAI_API_KEY not set (env or ~/.config/voxgo/env)")
 	}
+	if sink := cfg["VOXGO_SINK"]; sink != "" {
+		os.Setenv("VOXGO_SINK", sink)
+	}
+	if v := cfg["VOXGO_VOICE"]; v != "" && voice == "shimmer" {
+		voice = v
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

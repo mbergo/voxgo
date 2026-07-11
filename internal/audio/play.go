@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -13,14 +14,18 @@ type Player struct {
 	stdin io.WriteCloser
 }
 
-// NewPlayer starts a pw-cat playback pipe.
+// NewPlayer starts a pw-cat playback pipe. VOXGO_SINK selects the output
+// device; otherwise the system default sink is used.
 func NewPlayer(ctx context.Context) (*Player, error) {
-	cmd := exec.CommandContext(ctx, "pw-cat", "--playback",
+	cmd := exec.CommandContext(ctx, "pw-cat", "--playback", "--raw",
 		"--format", "s16",
 		"--rate", "24000",
 		"--channels", "1",
 		"-",
 	)
+	if sink := os.Getenv("VOXGO_SINK"); sink != "" {
+		cmd.Env = append(os.Environ(), "PIPEWIRE_NODE="+sink)
+	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("pw-cat stdin: %w", err)

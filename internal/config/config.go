@@ -32,7 +32,7 @@ func Load() map[string]string {
 		}
 	}
 
-	for _, key := range []string{"OPENAI_API_KEY", "VOXGO_MODEL", "VOXGO_PROMPT"} {
+	for _, key := range []string{"OPENAI_API_KEY", "VOXGO_MODEL", "VOXGO_PROMPT", "VOXGO_SINK", "VOXGO_VOICE"} {
 		if v := os.Getenv(key); v != "" {
 			cfg[key] = v
 		}
