@@ -81,7 +81,7 @@ func runChat(voice string) {
 		sess.Close()
 	}()
 
-	fmt.Printf("🗣  voxgo chat — voice %q, speak naturally. Ctrl-C to quit.\n", voice)
+	fmt.Printf("🗣  Irene is listening — voice %q, speak naturally. Ctrl-C to quit.\n", voice)
 
 	for {
 		ev, err := sess.Read()
