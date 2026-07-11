@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/websocket"
 )
@@ -27,11 +29,10 @@ type Session struct {
 	conn *websocket.Conn
 }
 
-// Connect opens a Realtime transcription session.
+// Connect opens a Realtime transcription session (GA API).
 func Connect(apiKey string) (*Session, error) {
 	header := http.Header{}
 	header.Set("Authorization", "Bearer "+apiKey)
-	header.Set("OpenAI-Beta", "realtime=v1")
 
 	conn, resp, err := websocket.DefaultDialer.Dial(realtimeURL, header)
 	if err != nil {
@@ -50,23 +51,31 @@ func Connect(apiKey string) (*Session, error) {
 	return s, nil
 }
 
-// configure sets up the transcription session: model, VAD, language.
+// configure sets up the GA transcription session: model, VAD, noise reduction.
 func (s *Session) configure() error {
 	cfg := map[string]any{
-		"type": "transcription_session.update",
+		"type": "session.update",
 		"session": map[string]any{
-			"input_audio_format": "pcm16",
-			"input_audio_transcription": map[string]any{
-				"model":  "gpt-4o-transcribe",
-				"prompt": "Transcribe accented English accurately.",
-			},
-			"turn_detection": map[string]any{
-				"type":              "server_vad",
-				"threshold":         0.5,
-				"silence_duration_ms": 500,
-			},
-			"input_audio_noise_reduction": map[string]any{
-				"type": "near_field",
+			"type": "transcription",
+			"audio": map[string]any{
+				"input": map[string]any{
+					"format": map[string]any{
+						"type": "audio/pcm",
+						"rate": 24000,
+					},
+					"transcription": map[string]any{
+						"model":  "gpt-4o-transcribe",
+						"prompt": "Transcribe accented English accurately.",
+					},
+					"turn_detection": map[string]any{
+						"type":                "server_vad",
+						"threshold":           0.5,
+						"silence_duration_ms": 500,
+					},
+					"noise_reduction": map[string]any{
+						"type": "near_field",
+					},
+				},
 			},
 		},
 	}
@@ -87,11 +96,21 @@ func (s *Session) Read() (*Event, error) {
 	if err != nil {
 		return nil, err
 	}
+	if os.Getenv("VOXGO_DEBUG") != "" {
+		log.Printf("[debug] %s", truncate(string(msg), 300))
+	}
 	var ev Event
 	if err := json.Unmarshal(msg, &ev); err != nil {
 		return nil, err
 	}
 	return &ev, nil
+}
+
+func truncate(s string, n int) string {
+	if len(s) > n {
+		return s[:n] + "…"
+	}
+	return s
 }
 
 // Close shuts down the WebSocket.

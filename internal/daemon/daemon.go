@@ -166,14 +166,14 @@ func (d *Daemon) session(ctx context.Context) error {
 	}
 	defer sess.Close()
 
-	mic, err := audio.Capture(ctx)
+	mic, err := audio.CaptureRate(ctx, 24000)
 	if err != nil {
 		return err
 	}
 	defer mic.Close()
 
 	go func() {
-		buf := make([]byte, 3200)
+		buf := make([]byte, 4800) // 100ms @ 24kHz
 		for {
 			n, err := mic.Read(buf)
 			if n > 0 {

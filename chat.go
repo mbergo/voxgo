@@ -83,12 +83,12 @@ func runChat(voice string) {
 			log.Fatalf("read: %v", err)
 		}
 		switch ev.Type {
-		case "response.audio.delta":
+		case "response.output_audio.delta", "response.audio.delta":
 			pcm, err := base64.StdEncoding.DecodeString(ev.Delta)
 			if err == nil {
 				_, _ = speaker.Write(pcm)
 			}
-		case "response.audio_transcript.done":
+		case "response.output_audio_transcript.done", "response.audio_transcript.done":
 			if ev.Transcript != "" {
 				fmt.Printf("🤖 %s\n", ev.Transcript)
 			}
