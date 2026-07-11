@@ -11,9 +11,15 @@ import (
 // a reader of raw PCM16 little-endian, 16kHz, mono — the format the
 // OpenAI Realtime API expects.
 func Capture(ctx context.Context) (io.ReadCloser, error) {
+	return CaptureRate(ctx, 16000)
+}
+
+// CaptureRate records from the default mic at the given sample rate
+// (PCM16 LE, mono).
+func CaptureRate(ctx context.Context, rate int) (io.ReadCloser, error) {
 	cmd := exec.CommandContext(ctx, "pw-record",
 		"--format", "s16",
-		"--rate", "16000",
+		"--rate", fmt.Sprint(rate),
 		"--channels", "1",
 		"-", // write to stdout
 	)
