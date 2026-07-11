@@ -25,6 +25,9 @@ func runChat(voice string) {
 	if sink := cfg["VOXGO_SINK"]; sink != "" {
 		os.Setenv("VOXGO_SINK", sink)
 	}
+	if p := cfg["VOXGO_PROMPT"]; p != "" {
+		os.Setenv("VOXGO_PROMPT", p)
+	}
 	if v := cfg["VOXGO_VOICE"]; v != "" && voice == "shimmer" {
 		voice = v
 	}

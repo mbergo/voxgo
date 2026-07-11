@@ -70,7 +70,7 @@ func (s *Session) configure() error {
 					"turn_detection": map[string]any{
 						"type":                "server_vad",
 						"threshold":           0.5,
-						"silence_duration_ms": 500,
+						"silence_duration_ms": 300, // snappy dictation
 					},
 					"noise_reduction": map[string]any{
 						"type": "near_field",

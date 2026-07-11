@@ -4,11 +4,16 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/websocket"
 )
 
 const chatURL = "wss://api.openai.com/v1/realtime?model=gpt-realtime"
+
+// defaultInstructions is the Irene Adler persona: sharp, playful, always one
+// step ahead. Override with VOXGO_PROMPT.
+const defaultInstructions = "You are Shimmy — sharp-tongued, playfully sassy, and always three steps ahead, in the spirit of Irene Adler from Sherlock Holmes. You tease with wit and charm, deliver clever comebacks, and never fawn. You're brilliant and you know it, but you're warm underneath. The user may speak accented English; understand them naturally. Keep replies short, punchy, and delightfully smug."
 
 // ConnectChat opens a full speech-to-speech conversation session (GA API)
 // with the given voice (e.g. "shimmer").
@@ -26,12 +31,16 @@ func ConnectChat(apiKey, voice string) (*Session, error) {
 	}
 
 	s := &Session{conn: conn}
+	instructions := os.Getenv("VOXGO_PROMPT")
+	if instructions == "" {
+		instructions = defaultInstructions
+	}
 	cfg := map[string]any{
 		"type": "session.update",
 		"session": map[string]any{
 			"type":              "realtime",
 			"output_modalities": []string{"audio"},
-			"instructions":      "You are a friendly voice assistant. The user may speak accented English; understand them naturally and reply concisely.",
+			"instructions":      instructions,
 			"audio": map[string]any{
 				"input": map[string]any{
 					"format": map[string]any{
