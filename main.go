@@ -1,3 +1,12 @@
+// Command voxgo is accent-friendly voice tooling for Linux on Wayland:
+// system-wide dictation that types into the focused window, and a
+// speech-to-speech chat assistant ("Irene"), both powered by the OpenAI
+// Realtime API over WebSocket.
+//
+// The binary is self-contained and exposes five entry points: a background
+// daemon controlled over a unix socket, a web dashboard, a terminal chat
+// mode, and thin client subcommands (toggle/start/stop/status) intended to
+// be bound to compositor hotkeys.
 package main
 
 import (
@@ -13,16 +22,30 @@ import (
 	"github.com/mbergo/voxgo/internal/daemon"
 )
 
-const usage = `voxgo — accent-friendly dictation for Linux (Wayland)
+const usage = `voxgo — accent-friendly dictation & voice chat for Linux (Wayland)
 
 Usage:
-  voxgo daemon    run the background daemon
-  voxgo web       control dashboard on http://localhost:7853
-  voxgo chat      voice conversation mode (speaks back, default voice: shimmer)
-  voxgo toggle    start/stop listening (bind this to a hotkey)
-  voxgo start     start listening
-  voxgo stop      stop listening
-  voxgo status    show daemon state
+  voxgo daemon           run the dictation daemon (background service)
+  voxgo web [addr]       web dashboard (default: 127.0.0.1:7853) —
+                         start/stop dictation & chat, pick voice, edit persona
+  voxgo chat [voice]     talk with Irene in the terminal (default voice: shimmer)
+  voxgo toggle           start/stop dictation — bind this to a hotkey
+  voxgo start            start dictation
+  voxgo stop             stop dictation
+  voxgo status           print daemon state (idle | listening)
+
+Configuration (~/.config/voxgo/env, KEY=VALUE; real env vars win):
+  OPENAI_API_KEY   required — your OpenAI API key
+  VOXGO_SINK       PipeWire sink for chat audio output (see: pactl list sinks short)
+  VOXGO_VOICE      default chat voice (shimmer, marin, cedar, alloy, ...)
+  VOXGO_PROMPT     override the built-in Irene persona
+  VOXGO_DEBUG      set to any value to log raw Realtime API events
+
+Examples:
+  voxgo daemon &                 # once per login
+  voxgo toggle                   # speak; text is typed into the focused window
+  voxgo chat marin               # voice chat using the marin voice
+  voxgo web 0.0.0.0:8080         # dashboard reachable from another device
 `
 
 func main() {

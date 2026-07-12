@@ -1,3 +1,11 @@
+// Package openai is a minimal WebSocket client for the OpenAI Realtime API
+// (GA protocol). It supports two session shapes: transcription-only
+// (Connect, used for dictation) and full speech-to-speech conversation
+// (ConnectChat, used for the Irene assistant). Only the handful of event
+// fields voxgo consumes are modeled; everything else is ignored.
+//
+// Set VOXGO_DEBUG to any non-empty value to log every raw server event,
+// which is invaluable when OpenAI evolves the protocol.
 package openai
 
 import (

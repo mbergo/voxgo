@@ -1,3 +1,8 @@
+// Package chat runs a full speech-to-speech conversation: microphone audio
+// is streamed to an OpenAI Realtime session and the assistant's spoken reply
+// is played through the configured PipeWire sink, while both sides'
+// transcripts are surfaced to the caller as events. It is shared by the
+// `voxgo chat` CLI and the web dashboard.
 package chat
 
 import (

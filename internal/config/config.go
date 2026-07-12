@@ -1,3 +1,7 @@
+// Package config loads voxgo settings from ~/.config/voxgo/env, a simple
+// KEY=VALUE file (comments with #, optional single or double quotes around
+// values). Real environment variables always take precedence over the file,
+// so one-off overrides like `VOXGO_VOICE=marin voxgo chat` work as expected.
 package config
 
 import (

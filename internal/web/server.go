@@ -1,3 +1,9 @@
+// Package web serves the voxgo control dashboard: a single embedded HTML
+// page plus a small JSON API for toggling dictation and chat, choosing the
+// assistant voice, and editing the persona prompt (persisted to
+// ~/.config/voxgo/env). Live transcripts are pushed to the page over
+// Server-Sent Events. Everything is compiled into the voxgo binary via
+// go:embed — there is no separate frontend build.
 package web
 
 import (

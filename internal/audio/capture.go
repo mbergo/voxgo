@@ -1,3 +1,7 @@
+// Package audio provides microphone capture and speaker playback on top of
+// PipeWire's command-line tools (pw-record, pw-cat). Audio is exchanged as
+// raw PCM16 little-endian mono, the wire format of the OpenAI Realtime API,
+// so no resampling or transcoding happens in Go.
 package audio
 
 import (

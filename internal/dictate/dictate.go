@@ -1,3 +1,7 @@
+// Package dictate runs one dictation session: microphone audio is streamed
+// to the OpenAI Realtime transcription API and every completed utterance is
+// typed into the focused window. It is the shared core used by both the
+// daemon (hotkey workflow) and the web dashboard.
 package dictate
 
 import (

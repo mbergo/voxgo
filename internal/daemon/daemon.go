@@ -1,3 +1,12 @@
+// Package daemon implements the long-running dictation service. It owns a
+// small state machine (idle ⇄ listening) exposed over a unix domain socket
+// at $XDG_RUNTIME_DIR/voxgo.sock, so lightweight clients — and therefore
+// compositor hotkeys — can flip dictation on and off with `voxgo toggle`.
+//
+// While listening, the daemon streams the microphone to the OpenAI Realtime
+// transcription API and types each completed utterance into the focused
+// window. Sessions reconnect automatically with exponential backoff, and
+// state changes are announced via desktop notifications (notify-send).
 package daemon
 
 import (
