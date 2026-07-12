@@ -17,6 +17,7 @@ const usage = `voxgo — accent-friendly dictation for Linux (Wayland)
 
 Usage:
   voxgo daemon    run the background daemon
+  voxgo web       control dashboard on http://localhost:7853
   voxgo chat      voice conversation mode (speaks back, default voice: shimmer)
   voxgo toggle    start/stop listening (bind this to a hotkey)
   voxgo start     start listening
@@ -33,6 +34,12 @@ func main() {
 	switch os.Args[1] {
 	case "daemon":
 		runDaemon()
+	case "web":
+		addr := "127.0.0.1:7853"
+		if len(os.Args) > 2 {
+			addr = os.Args[2]
+		}
+		runWeb(addr)
 	case "chat":
 		voice := "shimmer"
 		if len(os.Args) > 2 {
