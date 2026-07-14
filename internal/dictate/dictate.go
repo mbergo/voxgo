@@ -7,6 +7,7 @@ package dictate
 import (
 	"context"
 	"errors"
+	"os"
 
 	"github.com/mbergo/voxgo/internal/audio"
 	"github.com/mbergo/voxgo/internal/openai"
@@ -65,6 +66,10 @@ func Run(ctx context.Context, apiKey string, onText func(string)) error {
 				onText(ev.Transcript)
 			}
 			_ = typer.Type(ev.Transcript + " ")
+			// Auto-send mode: submit the utterance as a chat message.
+			if os.Getenv("VOXGO_ENTER") != "" {
+				_ = typer.PressEnter()
+			}
 		case "error":
 			if ev.Error != nil {
 				return errors.New(ev.Error.Message)

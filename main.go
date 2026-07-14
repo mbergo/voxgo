@@ -29,6 +29,7 @@ Usage:
   voxgo web [addr]       web dashboard (default: 127.0.0.1:7853) —
                          start/stop dictation & chat, pick voice, edit persona
   voxgo chat [voice]     talk with Irene in the terminal (default voice: shimmer)
+  voxgo say [-v voice] [text|-]   speak text aloud via OpenAI TTS (stdin with -)
   voxgo toggle           start/stop dictation — bind this to a hotkey
   voxgo start            start dictation
   voxgo stop             stop dictation
@@ -69,6 +70,8 @@ func main() {
 			voice = os.Args[2]
 		}
 		runChat(voice)
+	case "say":
+		runSay(os.Args[2:])
 	case "start", "stop", "toggle", "status":
 		sendCommand(os.Args[1])
 	default:
@@ -82,6 +85,10 @@ func runDaemon() {
 	apiKey := cfg["OPENAI_API_KEY"]
 	if apiKey == "" {
 		log.Fatal("OPENAI_API_KEY not set (env or ~/.config/voxgo/env)")
+	}
+	// Propagate dictation options to the session loops.
+	if v := cfg["VOXGO_ENTER"]; v != "" {
+		os.Setenv("VOXGO_ENTER", v)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

@@ -11,7 +11,6 @@ package daemon
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -22,9 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mbergo/voxgo/internal/audio"
-	"github.com/mbergo/voxgo/internal/openai"
-	"github.com/mbergo/voxgo/internal/typer"
+	"github.com/mbergo/voxgo/internal/dictate"
 )
 
 // SocketPath returns the control socket path.
@@ -168,62 +165,12 @@ func (d *Daemon) dictate(ctx context.Context) {
 	}
 }
 
+// session runs one dictation episode via the shared dictate loop, logging
+// each transcript. Auto-send (VOXGO_ENTER) is handled inside dictate.
 func (d *Daemon) session(ctx context.Context) error {
-	sess, err := openai.Connect(d.apiKey)
-	if err != nil {
-		return err
-	}
-	defer sess.Close()
-
-	mic, err := audio.CaptureRate(ctx, 24000)
-	if err != nil {
-		return err
-	}
-	defer mic.Close()
-
-	go func() {
-		buf := make([]byte, 4800) // 100ms @ 24kHz
-		for {
-			n, err := mic.Read(buf)
-			if n > 0 {
-				if err := sess.SendAudio(buf[:n]); err != nil {
-					return
-				}
-			}
-			if err != nil {
-				return
-			}
-		}
-	}()
-
-	go func() {
-		<-ctx.Done()
-		sess.Close()
-	}()
-
-	for {
-		ev, err := sess.Read()
-		if err != nil {
-			if ctx.Err() != nil {
-				return nil
-			}
-			return err
-		}
-		switch ev.Type {
-		case "conversation.item.input_audio_transcription.completed":
-			if ev.Transcript == "" {
-				continue
-			}
-			log.Printf("» %s", ev.Transcript)
-			if err := typer.Type(ev.Transcript + " "); err != nil {
-				log.Printf("wtype: %v", err)
-			}
-		case "error":
-			if ev.Error != nil {
-				return errors.New(ev.Error.Message)
-			}
-		}
-	}
+	return dictate.Run(ctx, d.apiKey, func(text string) {
+		log.Printf("» %s", text)
+	})
 }
 
 func notify(title, body string) {
