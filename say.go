@@ -19,7 +19,7 @@ import (
 // empty or "-". This gives any program — or an AI assistant driving a shell —
 // a voice.
 func runSay(args []string) {
-	cfg := config.Load()
+	cfg := config.Export()
 	apiKey := cfg["OPENAI_API_KEY"]
 	if apiKey == "" {
 		log.Fatal("OPENAI_API_KEY not set (env or ~/.config/voxgo/env)")

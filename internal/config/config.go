@@ -36,10 +36,26 @@ func Load() map[string]string {
 		}
 	}
 
-	for _, key := range []string{"OPENAI_API_KEY", "VOXGO_MODEL", "VOXGO_PROMPT", "VOXGO_SINK", "VOXGO_VOICE"} {
+	for _, key := range []string{
+		"OPENAI_API_KEY", "VOXGO_MODEL", "VOXGO_PROMPT", "VOXGO_SINK",
+		"VOXGO_VOICE", "VOXGO_SAY_VOICE", "VOXGO_ENTER", "VOXGO_INTERRUPT",
+		"VOXGO_VAD_SILENCE_MS", "VOXGO_VAD_THRESHOLD", "VOXGO_DEBUG",
+	} {
 		if v := os.Getenv(key); v != "" {
 			cfg[key] = v
 		}
+	}
+	return cfg
+}
+
+// Export loads the config and copies every value into the process
+// environment (real env vars still win, since Load prefers them). Commands
+// call this once at startup so internal packages can simply read os.Getenv
+// without threading the config map everywhere.
+func Export() map[string]string {
+	cfg := Load()
+	for k, v := range cfg {
+		os.Setenv(k, v)
 	}
 	return cfg
 }

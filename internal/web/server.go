@@ -59,6 +59,7 @@ func (s *Server) ListenAndServe(ctx context.Context, addr string) error {
 	mux.HandleFunc("POST /api/dictation/toggle", s.handleDictToggle)
 	mux.HandleFunc("POST /api/chat/toggle", s.handleChatToggle)
 	mux.HandleFunc("POST /api/prompt", s.handlePrompt)
+	mux.HandleFunc("POST /api/settings", s.handleSettings)
 	mux.HandleFunc("GET /api/events", s.handleEvents)
 
 	srv := &http.Server{Addr: addr, Handler: mux}
@@ -93,7 +94,46 @@ func (s *Server) state() map[string]any {
 		"chatting":  s.chatCancel != nil,
 		"voice":     s.voice,
 		"prompt":    os.Getenv("VOXGO_PROMPT"),
+		"settings": map[string]string{
+			"VOXGO_VAD_SILENCE_MS": os.Getenv("VOXGO_VAD_SILENCE_MS"),
+			"VOXGO_VAD_THRESHOLD":  os.Getenv("VOXGO_VAD_THRESHOLD"),
+			"VOXGO_INTERRUPT":      os.Getenv("VOXGO_INTERRUPT"),
+			"VOXGO_ENTER":          os.Getenv("VOXGO_ENTER"),
+			"VOXGO_SAY_VOICE":      os.Getenv("VOXGO_SAY_VOICE"),
+			"VOXGO_SINK":           os.Getenv("VOXGO_SINK"),
+		},
 	}
+}
+
+// settingsKeys are the config keys the dashboard is allowed to change.
+var settingsKeys = map[string]bool{
+	"VOXGO_VAD_SILENCE_MS": true,
+	"VOXGO_VAD_THRESHOLD":  true,
+	"VOXGO_INTERRUPT":      true,
+	"VOXGO_ENTER":          true,
+	"VOXGO_SAY_VOICE":      true,
+	"VOXGO_SINK":           true,
+}
+
+// handleSettings persists dashboard settings to ~/.config/voxgo/env and the
+// process environment. New values apply the next time dictation or chat
+// (re)connects.
+func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
+	var req map[string]string
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	for k, v := range req {
+		if !settingsKeys[k] {
+			continue
+		}
+		os.Setenv(k, v)
+		if err := saveConfigValue(k, v); err != nil {
+			log.Printf("saving %s: %v", k, err)
+		}
+	}
+	writeJSON(w, s.state())
 }
 
 func (s *Server) handleState(w http.ResponseWriter, r *http.Request) {

@@ -13,7 +13,7 @@ import (
 
 // runWeb serves the control dashboard.
 func runWeb(addr string) {
-	cfg := config.Load()
+	cfg := config.Export()
 	apiKey := cfg["OPENAI_API_KEY"]
 	if apiKey == "" {
 		log.Fatal("OPENAI_API_KEY not set (env or ~/.config/voxgo/env)")

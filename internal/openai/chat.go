@@ -50,12 +50,9 @@ func ConnectChat(apiKey, voice string) (*Session, error) {
 					"transcription": map[string]any{
 						"model": "gpt-4o-transcribe",
 					},
-					"turn_detection": map[string]any{
-						"type":                "server_vad",
-						"threshold":           0.6, // higher: ignores speaker bleed/echo
-						"prefix_padding_ms":   300,
-						"silence_duration_ms": 700, // patient with pauses in accented speech
-					},
+					// 0.6 threshold ignores speaker bleed; 1s silence is
+					// patient with pauses in accented speech.
+					"turn_detection": vadSettings(0.6, 1000),
 					"noise_reduction": map[string]any{
 						"type": "near_field",
 					},

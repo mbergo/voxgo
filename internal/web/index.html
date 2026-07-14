@@ -12,7 +12,7 @@
   h1 { font-size:28px; margin:0 0 4px; } h1 span { color:var(--accent); }
   .sub { color:var(--muted); font-size:13px; margin-bottom:20px; }
   .card { background:var(--card); border-radius:12px; padding:18px; margin-bottom:16px; }
-  .card h2 { font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 12px; }
+  .card h2 { font-size:16px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 12px; }
   .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   button { background:var(--accent); color:#1a1207; border:0; border-radius:8px; padding:10px 18px;
            font-size:15px; font-weight:600; cursor:pointer; }
@@ -20,8 +20,14 @@
   button:disabled { opacity:.45; cursor:default; }
   .dot { width:10px; height:10px; border-radius:50%; background:var(--muted); display:inline-block; }
   .dot.on { background:var(--ok); box-shadow:0 0 8px var(--ok); }
-  select, textarea { background:#191410; color:var(--fg); border:1px solid #3a2f22; border-radius:8px;
-                     padding:8px 10px; font-size:14px; width:100%; }
+  select, textarea, input[type=text], input[type=number] {
+    background:#191410; color:var(--fg); border:1px solid #3a2f22; border-radius:8px;
+    padding:8px 10px; font-size:14px; width:100%; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:560px) { .grid { grid-template-columns:1fr; } }
+  label.check { display:flex; align-items:center; gap:8px; font-size:14px; color:var(--fg);
+    margin:0; cursor:pointer; }
+  label.check input { width:auto; accent-color:var(--accent); }
   textarea { min-height:110px; resize:vertical; font-family:inherit; line-height:1.4; }
   #log { background:#191410; border-radius:8px; padding:12px; min-height:120px; max-height:280px;
          overflow-y:auto; font-size:14px; line-height:1.6; }
@@ -66,6 +72,40 @@
   </div>
 
   <div class="card">
+    <h2>Settings</h2>
+    <div class="grid">
+      <div>
+        <label for="vadSilence">Pause before send, in ms (higher gives you more time to think)</label>
+        <input type="number" id="vadSilence" min="100" max="5000" step="100" placeholder="1000">
+      </div>
+      <div>
+        <label for="vadThreshold">Mic sensitivity, 0 to 1 (higher ignores background noise)</label>
+        <input type="number" id="vadThreshold" min="0.1" max="1" step="0.05" placeholder="0.5 / 0.6">
+      </div>
+      <div>
+        <label for="sayVoice">Copilot voice (voxgo say)</label>
+        <select id="sayVoice">
+          <option>marin</option><option>shimmer</option><option>cedar</option>
+          <option>alloy</option><option>ash</option><option>ballad</option>
+          <option>coral</option><option>echo</option><option>sage</option><option>verse</option>
+        </select>
+      </div>
+      <div>
+        <label for="sink">Output device (VOXGO_SINK, blank = default)</label>
+        <input type="text" id="sink" placeholder="alsa_output...">
+      </div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <label class="check"><input type="checkbox" id="interrupt"> Interrupt: talking over the voice cuts it off</label>
+      <label class="check"><input type="checkbox" id="autoEnter"> Auto-send: press Enter after each dictated phrase</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="secondary" onclick="saveSettings()">Save settings</button>
+      <span class="status" id="settingsStatus">applies on next start of dictation/chat</span>
+    </div>
+  </div>
+
+  <div class="card">
     <h2>Live transcript</h2>
     <div id="log"></div>
   </div>
@@ -80,6 +120,7 @@ function setState(s) {
   document.getElementById('chatBtn').textContent = s.chatting ? 'Stop' : 'Start';
   if (!promptDirty) document.getElementById('prompt').value = s.prompt;
   if (s.voice) document.getElementById('voice').value = s.voice;
+  setSettings(s.settings);
 }
 async function refresh() { setState(await api('/api/state')); }
 async function toggleDict() { setState(await api('/api/dictation/toggle', {method:'POST'})); }
@@ -90,6 +131,34 @@ async function toggleChat() {
 }
 let promptDirty = false;
 document.getElementById('prompt').addEventListener('input', () => promptDirty = true);
+let settingsDirty = false;
+for (const id of ['vadSilence','vadThreshold','sayVoice','sink','interrupt','autoEnter'])
+  document.getElementById(id).addEventListener('input', () => settingsDirty = true);
+function setSettings(st) {
+  if (settingsDirty || !st) return;
+  document.getElementById('vadSilence').value = st.VOXGO_VAD_SILENCE_MS || '';
+  document.getElementById('vadThreshold').value = st.VOXGO_VAD_THRESHOLD || '';
+  if (st.VOXGO_SAY_VOICE) document.getElementById('sayVoice').value = st.VOXGO_SAY_VOICE;
+  document.getElementById('sink').value = st.VOXGO_SINK || '';
+  document.getElementById('interrupt').checked = st.VOXGO_INTERRUPT !== '0';
+  document.getElementById('autoEnter').checked = st.VOXGO_ENTER === '1';
+}
+async function saveSettings() {
+  const body = {
+    VOXGO_VAD_SILENCE_MS: document.getElementById('vadSilence').value,
+    VOXGO_VAD_THRESHOLD: document.getElementById('vadThreshold').value,
+    VOXGO_SAY_VOICE: document.getElementById('sayVoice').value,
+    VOXGO_SINK: document.getElementById('sink').value,
+    VOXGO_INTERRUPT: document.getElementById('interrupt').checked ? '1' : '0',
+    VOXGO_ENTER: document.getElementById('autoEnter').checked ? '1' : '0',
+  };
+  setState(await api('/api/settings', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}));
+  settingsDirty = false;
+  const el = document.getElementById('settingsStatus');
+  el.textContent = 'saved ✓ (applies on next start)';
+  setTimeout(() => el.textContent = 'applies on next start of dictation/chat', 2500);
+}
 async function savePrompt() {
   const prompt = document.getElementById('prompt').value;
   await api('/api/prompt', {method:'POST', headers:{'Content-Type':'application/json'},

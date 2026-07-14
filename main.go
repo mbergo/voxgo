@@ -81,14 +81,10 @@ func main() {
 }
 
 func runDaemon() {
-	cfg := config.Load()
+	cfg := config.Export()
 	apiKey := cfg["OPENAI_API_KEY"]
 	if apiKey == "" {
 		log.Fatal("OPENAI_API_KEY not set (env or ~/.config/voxgo/env)")
-	}
-	// Propagate dictation options to the session loops.
-	if v := cfg["VOXGO_ENTER"]; v != "" {
-		os.Setenv("VOXGO_ENTER", v)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

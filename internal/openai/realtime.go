@@ -75,11 +75,9 @@ func (s *Session) configure() error {
 						"model":  "gpt-4o-transcribe",
 						"prompt": "Transcribe accented English accurately.",
 					},
-					"turn_detection": map[string]any{
-						"type":                "server_vad",
-						"threshold":           0.5,
-						"silence_duration_ms": 300, // snappy dictation
-					},
+					// 1s default: room to breathe mid-sentence when
+					// English isn't your first language.
+					"turn_detection": vadSettings(0.5, 1000),
 					"noise_reduction": map[string]any{
 						"type": "near_field",
 					},
@@ -88,6 +86,12 @@ func (s *Session) configure() error {
 		},
 	}
 	return s.conn.WriteJSON(cfg)
+}
+
+// CancelResponse asks the server to stop generating the in-flight response.
+// Used for barge-in when the user talks over the assistant.
+func (s *Session) CancelResponse() error {
+	return s.conn.WriteJSON(map[string]any{"type": "response.cancel"})
 }
 
 // SendAudio streams a chunk of PCM16 audio to the session.

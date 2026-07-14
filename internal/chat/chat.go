@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"os"
 
 	"github.com/mbergo/voxgo/internal/audio"
 	"github.com/mbergo/voxgo/internal/openai"
@@ -61,6 +62,11 @@ func Run(ctx context.Context, apiKey, voice string, onEvent func(Event)) error {
 		sess.Close()
 	}()
 
+	// Barge-in: unless VOXGO_INTERRUPT=0, talking over the assistant cancels
+	// its in-flight reply and flushes queued audio so it shuts up right away.
+	interrupt := os.Getenv("VOXGO_INTERRUPT") != "0"
+	responding := false
+
 	for {
 		ev, err := sess.Read()
 		if err != nil {
@@ -70,6 +76,16 @@ func Run(ctx context.Context, apiKey, voice string, onEvent func(Event)) error {
 			return err
 		}
 		switch ev.Type {
+		case "input_audio_buffer.speech_started":
+			if interrupt && responding {
+				_ = sess.CancelResponse()
+				_ = speaker.Flush()
+				responding = false
+			}
+		case "response.created":
+			responding = true
+		case "response.done":
+			responding = false
 		case "response.output_audio.delta", "response.audio.delta":
 			pcm, err := base64.StdEncoding.DecodeString(ev.Delta)
 			if err == nil {

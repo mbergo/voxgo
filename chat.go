@@ -17,7 +17,7 @@ import (
 // runChat is a full speech-to-speech conversation using the system default
 // mic and speakers.
 func runChat(voice string) {
-	cfg := config.Load()
+	cfg := config.Export()
 	apiKey := cfg["OPENAI_API_KEY"]
 	if apiKey == "" {
 		log.Fatal("OPENAI_API_KEY not set (env or ~/.config/voxgo/env)")
